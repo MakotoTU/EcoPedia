@@ -3,6 +3,11 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Circular Background -->
+    <path
+        android:fillColor="#E8F5E9"
+        android:pathData="M54,54m-48,0a48,48 0,1 1,96 0a48,48 0,1 1,-96 0" />
+    <!-- Leaf Foreground -->
     <path
         android:fillColor="#2E7D32"
         android:pathData="M54,20 C35,20 20,45 20,65 C20,85 35,90 54,90 C73,90 88,85 88,65 C88,45 73,20 54,20 Z" />
