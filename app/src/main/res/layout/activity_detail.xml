@@ -97,7 +97,7 @@
                         android:layout_gravity="center"
                         android:fontFamily="sans-serif-black"
                         android:text="Sampah Plastik"
-                        android:textColor="@color/white"
+                        android:textColor="@color/bone_white"
                         android:textSize="28sp"
                         android:gravity="center"
                         android:padding="20dp" />
