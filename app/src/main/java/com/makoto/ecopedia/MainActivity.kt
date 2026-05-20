@@ -1,97 +1,122 @@
 package com.makoto.ecopedia
 
-import android.content.Intent
+import android.content.res.Configuration
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
-import android.widget.ImageButton
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.navigation.ui.setupWithNavController
+import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class MainActivity : AppCompatActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
-        setupCategoryClicks()
+        setupToolbar()
         setupNavigation()
-        setupThemeToggle()
         setupEdgeToEdge()
     }
 
+    private fun setupToolbar() {
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        setSupportActionBar(toolbar)
+    }
+
     private fun setupNavigation() {
-        val navHome = findViewById<View>(R.id.navHome)
-        val navTips = findViewById<View>(R.id.navTips)
-        
-        // Set Home as selected by default
-        navHome.isSelected = true
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        val navController = navHostFragment.navController
 
-        navTips.setOnClickListener {
-            val intent = Intent(this, TipsActivity::class.java)
-            startActivity(intent)
-        }
+        // Semua tab adalah top-level destination (tidak ada tombol back)
+        val appBarConfiguration = AppBarConfiguration(
+            setOf(R.id.homeFragment, R.id.scanFragment, R.id.tipsFragment)
+        )
+        setupActionBarWithNavController(navController, appBarConfiguration)
+
+        // Hubungkan BottomNavigationView dengan NavController
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNavigation)
+        bottomNav.setupWithNavController(navController)
     }
 
-    private fun setupThemeToggle() {
-        val btnToggle = findViewById<ImageButton>(R.id.btnThemeToggle)
-        
-        // Update icon based on current mode
-        val isDarkMode = resources.configuration.uiMode and 
-                android.content.res.Configuration.UI_MODE_NIGHT_MASK == 
-                android.content.res.Configuration.UI_MODE_NIGHT_YES
-        
-        btnToggle.setImageResource(if (isDarkMode) R.drawable.moon_darkmode else R.drawable.sun_lightmode)
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
 
-        btnToggle.setOnClickListener {
-            if (isDarkMode) {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-            } else {
-                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-            }
-        }
-    }
-
-    private fun setupCategoryClicks() {
-        val categories = mapOf(
-            R.id.cardPlastik to "Plastik",
-            R.id.cardKertas to "Kertas",
-            R.id.cardKaca to "Kaca",
-            R.id.cardOrganik to "Organik",
-            R.id.cardB3 to "B3",
-            R.id.cardLogam to "Logam"
+        // Update icon tema berdasarkan mode saat ini
+        val isDarkMode = resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        menu.findItem(R.id.action_toggle_theme)?.setIcon(
+            if (isDarkMode) R.drawable.moon_darkmode else R.drawable.sun_lightmode
         )
 
-        for ((id, name) in categories) {
-            findViewById<View>(id).setOnClickListener {
-                val intent = Intent(this, DetailActivity::class.java)
-                intent.putExtra("CATEGORY", name)
-                startActivity(intent)
+        // Tint icon menu agar sesuai tema
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
+        toolbar.overflowIcon?.setTint(getColor(R.color.primary_green))
+        menu.findItem(R.id.action_toggle_theme)?.icon?.setTint(getColor(R.color.primary_green))
+
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_toggle_theme -> {
+                toggleTheme()
+                true
             }
+            R.id.action_about -> {
+                showAboutDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun toggleTheme() {
+        val isDarkMode = resources.configuration.uiMode and
+                Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        if (isDarkMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+        } else {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
+    }
+
+    private fun showAboutDialog() {
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Tentang EcoPedia")
+            .setMessage(
+                "EcoPedia v${packageManager.getPackageInfo(packageName, 0).versionName}\n\n" +
+                "Aplikasi edukasi untuk memahami berbagai jenis sampah dan tips hidup ramah lingkungan.\n\n" +
+                "Dibuat dengan ❤\uFE0F untuk lingkungan yang lebih bersih."
+            )
+            .setIcon(R.drawable.leaf)
+            .setPositiveButton("Tutup", null)
+            .show()
     }
 
     private fun setupEdgeToEdge() {
-        val topBar = findViewById<View>(R.id.topBarContent)
-        val bottomNav = findViewById<View>(R.id.bottomNavContent)
+        val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
 
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainScrollView)) { _, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.mainLayout)) { _, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            
-            topBar.setPadding(
-                topBar.paddingLeft,
-                systemBars.top,
-                topBar.paddingRight,
-                topBar.paddingBottom
-            )
 
-            bottomNav.setPadding(
-                bottomNav.paddingLeft,
-                bottomNav.paddingTop,
-                bottomNav.paddingRight,
-                systemBars.bottom
+            toolbar.setPadding(
+                toolbar.paddingLeft,
+                systemBars.top,
+                toolbar.paddingRight,
+                toolbar.paddingBottom
             )
 
             insets

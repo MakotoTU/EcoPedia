@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/house_on"
+        android:title="Beranda" />
+
+    <item
+        android:id="@+id/scanFragment"
+        android:icon="@drawable/scan_on"
+        android:title="Pindai" />
+
+    <item
+        android:id="@+id/tipsFragment"
+        android:icon="@drawable/lightbulb_on"
+        android:title="Tips" />
+
+</menu>

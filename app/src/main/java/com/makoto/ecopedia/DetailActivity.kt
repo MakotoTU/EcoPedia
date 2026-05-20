@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import coil.load
 
 class DetailActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,7 +46,7 @@ class DetailActivity : AppCompatActivity() {
             "Logam" -> R.drawable.logam
             else -> R.drawable.leaf
         }
-        ivHeroImage.setImageResource(imageRes)
+        ivHeroImage.load(imageRes)
 
         // Data based on Desktop Design (Latest Source of Truth)
         when (category) {
