@@ -9,7 +9,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
 import coil.load
+import com.makoto.ecopedia.data.EcoPediaDatabase
+import kotlinx.coroutines.launch
 
 class DetailActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,61 +20,84 @@ class DetailActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_detail)
 
-        val category = intent.getStringExtra("CATEGORY") ?: "Plastik"
-        
-        setupUI(category)
         setupEdgeToEdge()
 
         findViewById<ImageButton>(R.id.btnBack).setOnClickListener {
             finish()
         }
+
+        loadData()
     }
 
-    private fun setupUI(category: String) {
+    private fun loadData() {
+        val categoryId = intent.getIntExtra("CATEGORY_ID", -1)
+        val categoryName = intent.getStringExtra("CATEGORY") ?: "Plastik"
+
+        val db = EcoPediaDatabase.getInstance(this)
+        val dao = db.wasteDao()
+
+        lifecycleScope.launch {
+            val category = if (categoryId != -1) {
+                dao.getCategoryById(categoryId)
+            } else {
+                dao.getCategoryByName(categoryName)
+            }
+
+            val examples = category?.let { dao.getExamplesByCategoryId(it.id) } ?: emptyList()
+
+            if (category != null) {
+                setupUI(category.name, category.icon, category.description,
+                    category.characteristics, category.impact, category.recyclingTips, examples)
+            } else {
+                setupFallback(categoryName)
+            }
+        }
+    }
+
+    private fun setupUI(
+        name: String,
+        icon: String,
+        description: String,
+        characteristics: String,
+        impact: String,
+        recyclingTips: String,
+        examples: List<com.makoto.ecopedia.data.WasteExampleEntity>
+    ) {
         val tvTitleHeader = findViewById<TextView>(R.id.tvTitleHeader)
         val tvHeroTitle = findViewById<TextView>(R.id.tvHeroTitle)
         val tvDescription = findViewById<TextView>(R.id.tvDescription)
+        val tvCharacteristics = findViewById<TextView>(R.id.tvCharacteristics)
+        val tvImpact = findViewById<TextView>(R.id.tvImpact)
+        val tvRecyclingTips = findViewById<TextView>(R.id.tvRecyclingTips)
+        val tvExamples = findViewById<TextView>(R.id.tvExamples)
         val ivHeroImage = findViewById<ImageView>(R.id.ivHeroImage)
 
-        tvTitleHeader.text = category
-        tvHeroTitle.text = "Sampah $category"
+        tvTitleHeader.text = name
+        tvHeroTitle.text = "Sampah $name"
 
-        // Map category to real image from Desktop assets
-        val imageRes = when (category) {
-            "Plastik" -> R.drawable.plastik
-            "Kertas" -> R.drawable.kertas
-            "Kaca" -> R.drawable.kaca
-            "Organik" -> R.drawable.organik
-            "B3" -> R.drawable.b3
-            "Logam" -> R.drawable.logam
-            else -> R.drawable.leaf
-        }
-        ivHeroImage.load(imageRes)
+        val imageRes = resources.getIdentifier(icon, "drawable", packageName)
+        ivHeroImage.load(if (imageRes != 0) imageRes else R.drawable.leaf)
 
-        // Data based on Desktop Design (Latest Source of Truth)
-        when (category) {
-            "Plastik" -> {
-                tvDescription.text = "Sampah plastik adalah semua barang bekas atau material yang diproduksi dari bahan kimia tak terbarukan. Jenis sampah ini sangat sulit terurai secara alami dan dapat mencemari lingkungan jika tidak dikelola dengan benar."
+        tvDescription.text = description
+        tvCharacteristics.text = characteristics
+        tvImpact.text = impact
+        tvRecyclingTips.text = recyclingTips
+
+        // Build examples text
+        if (examples.isNotEmpty()) {
+            val examplesText = examples.joinToString("\n\n") { example ->
+                "\u2022 ${example.name}\n  ${example.description}\n  \u23F3 Waktu terurai: ${example.decompositionTime}"
             }
-            "Kertas" -> {
-                tvDescription.text = "Sampah kertas adalah limbah yang berasal dari berbagai jenis kertas yang sudah tidak digunakan lagi, seperti koran, majalah, kardus, dan kertas bekas kantor. Jenis limbah ini sangat umum dihasilkan dari aktivitas sehari-hari, tetapi jika tidak dikelola dengan baik, dapat menimbulkan masalah lingkungan."
-            }
-            "Kaca" -> {
-                tvDescription.text = "Sampah kaca adalah limbah anorganik yang berasal dari produk berbahan kaca seperti botol, toples, atau pecahan gelas. Kaca merupakan material unik yang dapat didaur ulang 100% berulang kali tanpa penurunan kualitas, namun butuh waktu jutaan tahun untuk terurai di alam jika dibuang sembarangan."
-            }
-            "Organik" -> {
-                tvDescription.text = "Sampah organik adalah limbah yang berasal dari sisa makhluk hidup (tanaman atau hewan) dan mudah terurai secara alami oleh mikroorganisme. Meskipun bisa membusuk sendiri, sampah ini sebaiknya diolah menjadi kompos agar tidak menumpuk di TPA dan menghasilkan gas metana yang berbahaya."
-            }
-            "B3" -> {
-                tvDescription.text = "Sampah B3 (Bahan Berbahaya dan Beracun) adalah limbah yang mengandung zat kimia berbahaya yang dapat merusak lingkungan dan kesehatan manusia secara serius. Jenis sampah ini SANGAT DILARANG untuk dibuang sembarangan atau dicampur dengan sampah rumah tangga biasa karena sifatnya yang mudah meledak, terbakar, reaktif, atau korosif."
-            }
-            "Logam" -> {
-                tvDescription.text = "Sampah logam adalah limbah anorganik yang terbuat dari bahan tambang seperti besi, baja, atau aluminium. Material ini sangat bernilai karena dapat didaur ulang dan dilebur kembali berkali-kali menjadi produk baru tanpa mengurangi kualitas aslinya secara signifikan."
-            }
-            else -> {
-                tvDescription.text = "Informasi detail mengenai sampah $category akan segera hadir."
-            }
+            tvExamples.text = examplesText
+        } else {
+            tvExamples.text = "Belum ada data contoh."
         }
+    }
+
+    private fun setupFallback(categoryName: String) {
+        findViewById<TextView>(R.id.tvTitleHeader).text = categoryName
+        findViewById<TextView>(R.id.tvHeroTitle).text = "Sampah $categoryName"
+        findViewById<TextView>(R.id.tvDescription).text = "Informasi detail mengenai sampah $categoryName akan segera hadir."
     }
 
     private fun setupEdgeToEdge() {

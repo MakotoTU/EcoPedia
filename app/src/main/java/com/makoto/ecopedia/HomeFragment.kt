@@ -8,6 +8,12 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.lifecycle.lifecycleScope
+import com.makoto.ecopedia.data.DatabaseSeeder
+import com.makoto.ecopedia.data.EcoPediaDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HomeFragment : Fragment() {
 
@@ -21,25 +27,37 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setupRecyclerView(view)
+        loadCategories(view)
     }
 
-    private fun setupRecyclerView(view: View) {
-        val categories = listOf(
-            Category(1, "Plastik", R.drawable.plastik),
-            Category(2, "Kertas", R.drawable.kertas),
-            Category(3, "Kaca", R.drawable.kaca),
-            Category(4, "Organik", R.drawable.organik),
-            Category(5, "B3", R.drawable.b3),
-            Category(6, "Logam", R.drawable.logam)
-        )
+    private fun loadCategories(view: View) {
+        val db = EcoPediaDatabase.getInstance(requireContext())
+        val dao = db.wasteDao()
 
-        val rvCategories = view.findViewById<RecyclerView>(R.id.rvCategories)
-        rvCategories.layoutManager = LinearLayoutManager(requireContext())
-        rvCategories.adapter = CategoryAdapter(categories) { category ->
-            val intent = Intent(requireContext(), DetailActivity::class.java)
-            intent.putExtra("CATEGORY", category.name)
-            startActivity(intent)
+        viewLifecycleOwner.lifecycleScope.launch {
+            // Seed database on first run
+            withContext(Dispatchers.IO) {
+                DatabaseSeeder.seedDatabase(dao)
+            }
+
+            val entities = dao.getAllCategories()
+            val categories = entities.map { entity ->
+                val resId = resources.getIdentifier(
+                    entity.icon, "drawable", requireContext().packageName
+                )
+                Category(entity.id, entity.name, if (resId != 0) resId else R.drawable.leaf)
+            }
+
+            if (isAdded) {
+                val rvCategories = view.findViewById<RecyclerView>(R.id.rvCategories)
+                rvCategories.layoutManager = LinearLayoutManager(requireContext())
+                rvCategories.adapter = CategoryAdapter(categories) { category ->
+                    val intent = Intent(requireContext(), DetailActivity::class.java)
+                    intent.putExtra("CATEGORY", category.name)
+                    intent.putExtra("CATEGORY_ID", category.id)
+                    startActivity(intent)
+                }
+            }
         }
     }
 }

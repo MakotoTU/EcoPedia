@@ -1,48 +1,57 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_light"
-    android:gravity="center"
-    android:orientation="vertical"
-    android:padding="32dp"
+    android:background="#FF000000"
     tools:context=".ScanFragment">
 
-    <ImageView
-        android:layout_width="120dp"
-        android:layout_height="120dp"
-        android:alpha="0.4"
-        android:src="@drawable/scan_on"
-        app:tint="@color/primary_green" />
+    <androidx.camera.view.PreviewView
+        android:id="@+id/viewFinder"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Scanner Overlay Frame -->
+    <View
+        android:id="@+id/scanOverlay"
+        android:layout_width="250dp"
+        android:layout_height="250dp"
+        android:background="@drawable/bg_scan_frame"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.4" />
 
     <TextView
+        android:id="@+id/tvScanInstruction"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
-        android:fontFamily="sans-serif-black"
-        android:text="Fitur Pindai"
-        android:textColor="@color/primary_green"
-        android:textSize="24sp" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:text="Arahkan barcode ke dalam bingkai"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
         android:fontFamily="sans-serif-medium"
-        android:text="Segera Hadir"
-        android:textColor="@color/accent_green"
-        android:textSize="16sp" />
+        android:shadowColor="#80000000"
+        android:shadowDx="1"
+        android:shadowDy="1"
+        android:shadowRadius="3"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/scanOverlay" />
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:gravity="center"
-        android:lineSpacingExtra="4dp"
-        android:text="Fitur ini akan memungkinkan kamu mengidentifikasi jenis sampah menggunakan kamera."
-        android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+    <!-- Flashlight Toggle using default android icons for simplicity -->
+    <ImageButton
+        android:id="@+id/btnFlashlight"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginTop="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_camera" 
+        app:tint="@android:color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvScanInstruction" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

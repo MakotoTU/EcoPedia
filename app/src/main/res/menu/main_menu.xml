@@ -13,4 +13,9 @@
         android:title="Tentang"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_test_notification"
+        android:title="Tes Notifikasi (Demo)"
+        app:showAsAction="never" />
+
 </menu>

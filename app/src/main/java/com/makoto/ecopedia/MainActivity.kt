@@ -8,8 +8,13 @@ import android.view.View
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -17,10 +22,53 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import java.util.concurrent.TimeUnit
+import android.widget.Toast
+import com.makoto.ecopedia.worker.EcoTipsWorker
 
 class MainActivity : AppCompatActivity() {
 
+    private var isReady = false
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            setupPeriodicNotification()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        
+        if (savedInstanceState == null) {
+            // Tahan splash screen selama 1.5 detik HANYA saat aplikasi pertama kali dibuka
+            lifecycleScope.launch {
+                delay(1500)
+                isReady = true
+            }
+            splashScreen.setKeepOnScreenCondition { !isReady }
+        } else {
+            // Jika Activity di-recreate (misal karena ganti tema), langsung tampilkan
+            isReady = true
+        }
+
+        val sharedPrefs = getSharedPreferences("ThemePrefs", MODE_PRIVATE)
+        if (sharedPrefs.contains("isNightMode")) {
+            val isNightMode = sharedPrefs.getBoolean("isNightMode", false)
+            AppCompatDelegate.setDefaultNightMode(
+                if (isNightMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+            )
+        }
+        
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
@@ -28,6 +76,7 @@ class MainActivity : AppCompatActivity() {
         setupToolbar()
         setupNavigation()
         setupEdgeToEdge()
+        checkNotificationPermission()
     }
 
     private fun setupToolbar() {
@@ -63,8 +112,8 @@ class MainActivity : AppCompatActivity() {
 
         // Tint icon menu agar sesuai tema
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
-        toolbar.overflowIcon?.setTint(getColor(R.color.primary_green))
-        menu.findItem(R.id.action_toggle_theme)?.icon?.setTint(getColor(R.color.primary_green))
+        toolbar.overflowIcon?.setTint(ContextCompat.getColor(this, R.color.primary_green))
+        menu.findItem(R.id.action_toggle_theme)?.icon?.setTint(ContextCompat.getColor(this, R.color.primary_green))
 
         return true
     }
@@ -79,18 +128,29 @@ class MainActivity : AppCompatActivity() {
                 showAboutDialog()
                 true
             }
+            R.id.action_test_notification -> {
+                testNotificationNow()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun testNotificationNow() {
+        val workRequest = OneTimeWorkRequestBuilder<EcoTipsWorker>().build()
+        WorkManager.getInstance(this).enqueue(workRequest)
+        Toast.makeText(this, "Mengirim notifikasi tes...", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleTheme() {
         val isDarkMode = resources.configuration.uiMode and
                 Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        }
+        
+        val newMode = if (isDarkMode) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_YES
+        AppCompatDelegate.setDefaultNightMode(newMode)
+        
+        val sharedPrefs = getSharedPreferences("ThemePrefs", MODE_PRIVATE)
+        sharedPrefs.edit().putBoolean("isNightMode", !isDarkMode).apply()
     }
 
     private fun showAboutDialog() {
@@ -121,5 +181,33 @@ class MainActivity : AppCompatActivity() {
 
             insets
         }
+    }
+
+    private fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            when {
+                ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED -> {
+                    setupPeriodicNotification()
+                }
+                else -> {
+                    requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        } else {
+            setupPeriodicNotification()
+        }
+    }
+
+    private fun setupPeriodicNotification() {
+        val workRequest = PeriodicWorkRequestBuilder<EcoTipsWorker>(24, TimeUnit.HOURS)
+            .build()
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "EcoTipsDaily",
+            ExistingPeriodicWorkPolicy.KEEP,
+            workRequest
+        )
     }
 }

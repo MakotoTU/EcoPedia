@@ -13,9 +13,18 @@ class CategoryAdapter(
     private val onItemClick: (Category) -> Unit
 ) : RecyclerView.Adapter<CategoryAdapter.CategoryViewHolder>() {
 
-    class CategoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class CategoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val ivCategoryImage: ImageView = view.findViewById(R.id.ivCategoryImage)
         val tvCategoryName: TextView = view.findViewById(R.id.tvCategoryName)
+
+        init {
+            view.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onItemClick(categories[position])
+                }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CategoryViewHolder {
@@ -29,10 +38,6 @@ class CategoryAdapter(
         holder.tvCategoryName.text = category.name
         holder.ivCategoryImage.load(category.imageRes) {
             crossfade(true)
-        }
-        
-        holder.itemView.setOnClickListener {
-            onItemClick(category)
         }
     }
 
