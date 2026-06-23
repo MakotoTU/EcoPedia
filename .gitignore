@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Ignore docs folder except changelog
+docs/*
+!docs/CHANGELOG.md
