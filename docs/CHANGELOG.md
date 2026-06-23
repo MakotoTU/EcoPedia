@@ -2,6 +2,24 @@
 
 ---
 
+## 22:30 | 23 Juni 2026 | Selasa | Fase 3: Offline-First and Manual Input |
+
+### 1. Local-First Caching Database
+**File:** `app/src/main/java/com/makoto/ecopedia/data/local/LocalProductEntity.kt`
+- Menambahkan `LocalProductEntity` di Room Database untuk menyimpan data scan produk beserta jenis kemasannya secara lokal. 
+- **Alasan:** Mempercepat scan ulang dan memastikan data produk tetap bisa diakses meskipun pengguna sedang offline.
+
+### 2. Manual Entry Input
+**File:** `app/src/main/java/com/makoto/ecopedia/ScanResultBottomSheet.kt`
+- Menambahkan UI text input nama produk di `ScanResultBottomSheet` untuk memberi nama produk yang tidak dikenali oleh API atau saat kondisi offline.
+- **Alasan:** Memberikan fleksibilitas kepada pengguna untuk tetap mencatat item yang tidak terdaftar di database Open Food Facts.
+
+### 3. API Response Fallback
+**File:** `app/src/main/java/com/makoto/ecopedia/repository/ScanRepository.kt`
+- Menyimpan data dari OpenFoodFacts ke cache lokal. Jika API gagal (404/Offline), aplikasi akan menampilkan form Manual Entry yang akan menyimpan barcode, nama kustom, dan ID sampah ke database lokal.
+
+---
+
 ## 21:40 | 23 Juni 2026 | Senin | Refactor Fitur Scan (Perbaikan Kritis) |
 
 ### 1. Fix User-Agent pada RetrofitClient

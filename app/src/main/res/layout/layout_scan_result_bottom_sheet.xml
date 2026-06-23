@@ -304,7 +304,22 @@
             android:fontFamily="sans-serif"
             android:textColor="?android:attr/textColorSecondary"
             android:textSize="13sp"
-            android:text="Produk tidak ditemukan di database Open Food Facts, atau koneksi terputus. Silakan pilih jenis kemasan secara manual di bawah ini:" />
+            android:text="Produk tidak ditemukan di database Open Food Facts, atau koneksi terputus. Silakan lengkapi data di bawah ini untuk disimpan offline:" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilManualProductName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Nama Produk (opsional)"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etManualProductName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
 
         <!-- Custom Styled Spinner Card -->
         <com.google.android.material.card.MaterialCardView

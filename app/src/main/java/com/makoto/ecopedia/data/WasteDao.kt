@@ -34,4 +34,10 @@ interface WasteDao {
 
     @Query("SELECT COUNT(*) FROM waste_categories")
     suspend fun getCategoryCount(): Int
+
+    @Query("SELECT * FROM local_products WHERE barcode = :barcode")
+    suspend fun getLocalProduct(barcode: String): LocalProductEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLocalProduct(product: LocalProductEntity)
 }

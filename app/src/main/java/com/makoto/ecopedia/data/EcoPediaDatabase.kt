@@ -6,8 +6,8 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [WasteCategoryEntity::class, WasteExampleEntity::class, ScanHistoryEntity::class],
-    version = 4,
+    entities = [WasteCategoryEntity::class, WasteExampleEntity::class, ScanHistoryEntity::class, LocalProductEntity::class],
+    version = 5,
     exportSchema = true
 )
 abstract class EcoPediaDatabase : RoomDatabase() {
