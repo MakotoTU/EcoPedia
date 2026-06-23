@@ -5,5 +5,5 @@ import retrofit2.http.Path
 
 interface OpenFoodFactsApi {
     @GET("api/v2/product/{barcode}.json")
-    suspend fun getProduct(@Path("barcode") barcode: String): OpenFoodFactsResponse
+    suspend fun getProduct(@Path("barcode") barcode: String): retrofit2.Response<OpenFoodFactsResponse>
 }

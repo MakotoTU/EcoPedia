@@ -7,8 +7,8 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [WasteCategoryEntity::class, WasteExampleEntity::class, ScanHistoryEntity::class],
-    version = 3,
-    exportSchema = false
+    version = 4,
+    exportSchema = true
 )
 abstract class EcoPediaDatabase : RoomDatabase() {
     abstract fun wasteDao(): WasteDao
@@ -20,15 +20,14 @@ abstract class EcoPediaDatabase : RoomDatabase() {
 
         fun getInstance(context: Context): EcoPediaDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                INSTANCE ?: Room.databaseBuilder(
                     context.applicationContext,
                     EcoPediaDatabase::class.java,
                     "ecopedia_database"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(dropAllTables = true)
                 .build()
-                INSTANCE = instance
-                instance
+                .also { INSTANCE = it }
             }
         }
     }

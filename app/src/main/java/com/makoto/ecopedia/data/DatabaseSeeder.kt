@@ -105,7 +105,6 @@ object DatabaseSeeder {
             WasteExampleEntity(29, 6, "Kaleng Makanan", "Kaleng sarden, kornet, susu dari tin plate (baja berlapis timah)", "50-100 tahun")
         )
 
-        dao.insertCategories(categories)
-        dao.insertExamples(examples)
+        dao.seedAll(categories, examples)
     }
 }

@@ -36,7 +36,9 @@ class ScanFragment : Fragment() {
             if (isGranted) {
                 startCamera()
             } else {
-                Toast.makeText(requireContext(), "Izin kamera diperlukan untuk memindai", Toast.LENGTH_LONG).show()
+                context?.let { ctx ->
+                    Toast.makeText(ctx, "Izin kamera diperlukan untuk memindai", Toast.LENGTH_LONG).show()
+                }
             }
         }
 
@@ -67,7 +69,8 @@ class ScanFragment : Fragment() {
     }
 
     private fun startCamera() {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+        val ctx = context ?: return
+        val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
@@ -79,7 +82,8 @@ class ScanFragment : Fragment() {
                 }
 
             barcodeAnalyzer = BarcodeAnalyzer { barcode ->
-                requireActivity().runOnUiThread {
+                activity?.runOnUiThread {
+                    if (!isAdded) return@runOnUiThread
                     view?.performHapticFeedback(android.view.HapticFeedbackConstants.VIRTUAL_KEY)
                     
                     val bottomSheet = ScanResultBottomSheet.newInstance(barcode)
@@ -105,7 +109,7 @@ class ScanFragment : Fragment() {
                 Log.e("ScanFragment", "Use case binding failed", exc)
             }
 
-        }, ContextCompat.getMainExecutor(requireContext()))
+        }, ContextCompat.getMainExecutor(ctx))
     }
 
     private fun toggleFlashlight() {
@@ -120,8 +124,8 @@ class ScanFragment : Fragment() {
         requireContext(), Manifest.permission.CAMERA
     ) == PackageManager.PERMISSION_GRANTED
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onDestroyView() {
+        super.onDestroyView()
         cameraExecutor.shutdown()
     }
     

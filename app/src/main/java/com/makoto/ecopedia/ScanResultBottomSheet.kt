@@ -149,10 +149,19 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
                     RetrofitClient.instance.getProduct(barcode)
                 }
                 
-                if (response.status == 1 && response.product != null) {
-                    bindProductData(response)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.status == 1 && body.product != null) {
+                        bindProductData(body)
+                    } else {
+                        showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                    }
                 } else {
-                    showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                    when (response.code()) {
+                        404 -> showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                        429 -> showErrorState("Sistem Sibuk", "Terlalu banyak permintaan. Silakan coba lagi beberapa saat.")
+                        else -> showErrorState("Server Error", "Terjadi kesalahan dari server (${response.code()}).")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -193,7 +202,7 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         }
 
         // Bind Packaging text
-        val packagingText = product.packaging?.text ?: "Tidak tersedia"
+        val packagingText = product.packaging ?: "Tidak tersedia"
         tvPackagingMaterial.text = "Kemasan: $packagingText"
 
         // Map to Room WasteCategory
@@ -248,10 +257,10 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         val finalCategoryId = if (categoryId == -1) null else categoryId
         
         // Ambil context dan path sebelum masuk background coroutine agar aman meski fragment keburu ditutup
-        val appContext = requireContext().applicationContext
-        val filesDirPath = requireContext().filesDir.absolutePath
+        val appContext = context?.applicationContext ?: return
+        val filesDirPath = appContext.filesDir.absolutePath
         
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
             var localImagePath: String? = null
 
             // Download image to local storage as per design doc
@@ -261,14 +270,14 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
                     val connection = url.openConnection()
                     connection.connectTimeout = 5000
                     connection.readTimeout = 5000
-                    val inputStream = connection.getInputStream()
-                    
-                    val filename = "scan_${System.currentTimeMillis()}.jpg"
-                    val file = File(filesDirPath, filename)
-                    FileOutputStream(file).use { output ->
-                        inputStream.copyTo(output)
+                    connection.getInputStream().use { inputStream ->
+                        val filename = "scan_${System.currentTimeMillis()}.jpg"
+                        val file = File(filesDirPath, filename)
+                        FileOutputStream(file).use { output ->
+                            inputStream.copyTo(output)
+                        }
+                        localImagePath = file.absolutePath
                     }
-                    localImagePath = file.absolutePath
                 } catch (e: Exception) {
                     e.printStackTrace()
                     // Fallback to URL if download fails
@@ -359,18 +368,19 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
             }
             
             // Open DetailActivity directly for manual selection
-            val appContext = context?.applicationContext ?: return@setOnClickListener
+            val hostActivity = activity ?: return@setOnClickListener
             dismiss()
-            viewLifecycleOwner.lifecycleScope.launch {
-                val db = EcoPediaDatabase.getInstance(appContext)
-                val category = db.wasteDao().getCategoryById(manualCategoryId)
+            kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+                val db = EcoPediaDatabase.getInstance(hostActivity.applicationContext)
+                val category = withContext(Dispatchers.IO) {
+                    db.wasteDao().getCategoryById(manualCategoryId)
+                }
                 if (category != null) {
-                    val intent = Intent(appContext, DetailActivity::class.java).apply {
+                    val intent = Intent(hostActivity, DetailActivity::class.java).apply {
                         putExtra("CATEGORY_ID", category.id)
                         putExtra("CATEGORY", category.name)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    appContext.startActivity(intent)
+                    hostActivity.startActivity(intent)
                 }
             }
         }

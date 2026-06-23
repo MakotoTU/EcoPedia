@@ -263,7 +263,7 @@
                 android:textColor="@color/primary_green"
                 app:strokeColor="@color/primary_green"
                 app:strokeWidth="1dp"
-                android:backgroundTint="@color/white" />
+                android:backgroundTint="@color/surface" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

@@ -26,6 +26,12 @@ interface WasteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertExamples(examples: List<WasteExampleEntity>)
 
+    @androidx.room.Transaction
+    suspend fun seedAll(categories: List<WasteCategoryEntity>, examples: List<WasteExampleEntity>) {
+        insertCategories(categories)
+        insertExamples(examples)
+    }
+
     @Query("SELECT COUNT(*) FROM waste_categories")
     suspend fun getCategoryCount(): Int
 }
