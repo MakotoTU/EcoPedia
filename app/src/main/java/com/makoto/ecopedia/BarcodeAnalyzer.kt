@@ -18,6 +18,9 @@ class BarcodeAnalyzer(
 
     private val scanner = BarcodeScanning.getClient(options)
     private var isScanning = true
+    
+    private var lastScannedBarcode: String? = null
+    private var lastScanTime: Long = 0
 
     @SuppressLint("UnsafeOptInUsageError")
     override fun analyze(imageProxy: ImageProxy) {
@@ -35,8 +38,18 @@ class BarcodeAnalyzer(
                     for (barcode in barcodes) {
                         val rawValue = barcode.rawValue
                         if (rawValue != null) {
-                            // Pause scanning to prevent multiple callbacks
+                            val currentTime = System.currentTimeMillis()
+                            
+                            // Cooldown 1.5 detik untuk barcode yang sama agar tidak popup terus-menerus
+                            if (rawValue == lastScannedBarcode && (currentTime - lastScanTime) < 1500) {
+                                continue
+                            }
+
+                            // Pause scanning to prevent multiple callbacks for different barcodes
                             isScanning = false
+                            lastScannedBarcode = rawValue
+                            lastScanTime = currentTime
+                            
                             onBarcodeDetected(rawValue)
                             break
                         }
@@ -55,5 +68,7 @@ class BarcodeAnalyzer(
 
     fun resumeScanning() {
         isScanning = true
+        // Reset waktu agar cooldown 3 detik dimulai saat user menutup popup
+        lastScanTime = System.currentTimeMillis()
     }
 }

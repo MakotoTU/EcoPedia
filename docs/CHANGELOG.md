@@ -18,6 +18,12 @@
 **File:** `app/src/main/java/com/makoto/ecopedia/repository/ScanRepository.kt`
 - Menyimpan data dari OpenFoodFacts ke cache lokal. Jika API gagal (404/Offline), aplikasi akan menampilkan form Manual Entry yang akan menyimpan barcode, nama kustom, dan ID sampah ke database lokal.
 
+### 4. Seeding Pre-populated Local Products
+**File:** `app/src/main/java/com/makoto/ecopedia/data/DatabaseSeeder.kt` & `WasteDao.kt`
+- Mengonversi data export SQL dari perangkat pengguna menjadi daftar objek `LocalProductEntity` di dalam `DatabaseSeeder.kt`.
+- Menyisipkan data tersebut secara otomatis ke database `local_products` saat aplikasi pertama kali di-install.
+- **Alasan:** Menjadikan database yang dikumpulkan secara manual (gerilya) sebagai data *pre-populated* bawaan, sehingga pengguna bisa langsung scan barcode tanpa memerlukan koneksi internet.
+
 ---
 
 ## 21:40 | 23 Juni 2026 | Senin | Refactor Fitur Scan (Perbaikan Kritis) |
