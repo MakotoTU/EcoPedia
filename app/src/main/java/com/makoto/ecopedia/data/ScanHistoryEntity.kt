@@ -22,7 +22,7 @@ data class ScanHistoryEntity(
     val barcode: String,
     val productName: String,
     val categoryId: Int?,
-    val ecoScore: String,
+    val ecoScore: String?,
     val imagePath: String?,    // Path gambar di local storage
     val scannedAt: Long        // Timestamp saat di-scan
 )

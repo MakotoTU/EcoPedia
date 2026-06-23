@@ -21,7 +21,9 @@ import com.makoto.ecopedia.data.EcoPediaDatabase
 import com.makoto.ecopedia.data.api.RetrofitClient
 import com.makoto.ecopedia.data.api.OpenFoodFactsResponse
 import com.makoto.ecopedia.data.ScanHistoryEntity
+import com.makoto.ecopedia.data.LocalProductEntity
 import com.makoto.ecopedia.data.ScanHistoryRepository
+import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -52,6 +54,7 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
     // Error/Fallback views
     private lateinit var spinnerManualCategory: Spinner
     private lateinit var btnSubmitManual: Button
+    private lateinit var etManualProductName: TextInputEditText
 
     private var barcode: String = ""
 
@@ -109,6 +112,7 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
 
         spinnerManualCategory = view.findViewById(R.id.spinnerManualCategory)
         btnSubmitManual = view.findViewById(R.id.btnSubmitManual)
+        etManualProductName = view.findViewById(R.id.etManualProductName)
 
         setupManualSelectionSpinner()
         fetchProductData()
@@ -144,21 +148,81 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                // Network call
+                // 1. Cek Local DB dulu
+                val appContext = context?.applicationContext ?: return@launch
+                val db = EcoPediaDatabase.getInstance(appContext)
+                val localProduct = withContext(Dispatchers.IO) {
+                    db.wasteDao().getLocalProduct(barcode)
+                }
+
+                if (localProduct != null) {
+                    bindLocalProductData(localProduct)
+                    return@launch
+                }
+
+                // 2. Network call jika tidak ada di lokal
                 val response = withContext(Dispatchers.IO) {
                     RetrofitClient.instance.getProduct(barcode)
                 }
                 
-                if (response.status == 1 && response.product != null) {
-                    bindProductData(response)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body?.status == 1 && body.product != null) {
+                        bindProductData(body)
+                    } else {
+                        showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                    }
                 } else {
-                    showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                    when (response.code()) {
+                        404 -> showErrorState("Produk Tidak Ditemukan", "Barcode $barcode tidak terdaftar di database Open Food Facts.")
+                        429 -> showErrorState("Sistem Sibuk", "Terlalu banyak permintaan. Silakan coba lagi beberapa saat.")
+                        else -> showErrorState("Server Error", "Terjadi kesalahan dari server (${response.code()}).")
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 showErrorState("Masalah Koneksi", "Gagal menghubungi server. Periksa koneksi internet Anda.")
             }
         }
+    }
+
+    private fun bindLocalProductData(local: LocalProductEntity) {
+        layoutLoading.visibility = View.GONE
+        layoutSuccess.visibility = View.VISIBLE
+        layoutError.visibility = View.GONE
+
+        tvProductName.text = local.productName
+        tvBarcode.text = "Barcode: $barcode"
+        imgProduct.load(local.imageUrl) {
+            placeholder(R.drawable.leaf)
+            error(R.drawable.leaf)
+        }
+
+        val grade = local.ecoScore?.lowercase() ?: "unknown"
+        if (grade != "unknown") {
+            cardEcoScore.visibility = View.VISIBLE
+            tvEcoScore.text = "Eco-Score: ${grade.uppercase()}"
+            val colorHex = when (grade) {
+                "a", "b" -> "#4CAF50" // Hijau
+                "c", "d" -> "#FF9800" // Jingga
+                "e" -> "#F44336" // Merah
+                else -> "#9E9E9E" // Abu-abu
+            }
+            cardEcoScore.setCardBackgroundColor(Color.parseColor(colorHex))
+        } else {
+            cardEcoScore.visibility = View.GONE
+        }
+
+        tvPackagingMaterial.text = "Kemasan: Tersimpan Offline"
+
+        loadWasteCategoryDetails(local.categoryId)
+        
+        saveScanHistory(
+            productName = local.productName,
+            ecoScore = local.ecoScore?.uppercase() ?: "UNKNOWN",
+            imageUrl = local.imageUrl,
+            categoryId = local.categoryId
+        )
     }
 
     private fun bindProductData(response: OpenFoodFactsResponse) {
@@ -193,11 +257,35 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         }
 
         // Bind Packaging text
-        val packagingText = product.packaging?.text ?: "Tidak tersedia"
+        val packagingText = product.packaging ?: "Tidak tersedia"
         tvPackagingMaterial.text = "Kemasan: $packagingText"
 
         // Map to Room WasteCategory
         val mappedCategoryId = mapPackagingToCategoryId(product.packagingMaterialsTags, packagingText)
+        
+        if (mappedCategoryId == -1) {
+            showErrorState(
+                "Bahan Kemasan Tidak Diketahui",
+                "Produk ditemukan, tetapi tipe kemasannya kosong atau belum terdata. Pilih jenis kemasan manual untuk menyimpannya ke database lokal:",
+                product.productName
+            )
+            return
+        }
+
+        // Cache ke Local DB agar query selanjutnya instan
+        val appContext = context?.applicationContext
+        if (appContext != null) {
+            CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
+                val db = EcoPediaDatabase.getInstance(appContext)
+                db.wasteDao().insertLocalProduct(LocalProductEntity(
+                    barcode = barcode,
+                    productName = product.productName ?: "Produk Tanpa Nama",
+                    categoryId = mappedCategoryId,
+                    ecoScore = product.ecoscoreGrade?.uppercase(),
+                    imageUrl = product.imageUrl
+                ))
+            }
+        }
         
         loadWasteCategoryDetails(mappedCategoryId)
         
@@ -248,10 +336,10 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         val finalCategoryId = if (categoryId == -1) null else categoryId
         
         // Ambil context dan path sebelum masuk background coroutine agar aman meski fragment keburu ditutup
-        val appContext = requireContext().applicationContext
-        val filesDirPath = requireContext().filesDir.absolutePath
+        val appContext = context?.applicationContext ?: return
+        val filesDirPath = appContext.filesDir.absolutePath
         
-        CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
             var localImagePath: String? = null
 
             // Download image to local storage as per design doc
@@ -261,14 +349,14 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
                     val connection = url.openConnection()
                     connection.connectTimeout = 5000
                     connection.readTimeout = 5000
-                    val inputStream = connection.getInputStream()
-                    
-                    val filename = "scan_${System.currentTimeMillis()}.jpg"
-                    val file = File(filesDirPath, filename)
-                    FileOutputStream(file).use { output ->
-                        inputStream.copyTo(output)
+                    connection.getInputStream().use { inputStream ->
+                        val filename = "scan_${System.currentTimeMillis()}.jpg"
+                        val file = File(filesDirPath, filename)
+                        FileOutputStream(file).use { output ->
+                            inputStream.copyTo(output)
+                        }
+                        localImagePath = file.absolutePath
                     }
-                    localImagePath = file.absolutePath
                 } catch (e: Exception) {
                     e.printStackTrace()
                     // Fallback to URL if download fails
@@ -334,7 +422,7 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun showErrorState(title: String, description: String) {
+    private fun showErrorState(title: String, description: String, defaultName: String? = null) {
         layoutLoading.visibility = View.GONE
         layoutSuccess.visibility = View.GONE
         layoutError.visibility = View.VISIBLE
@@ -344,6 +432,9 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
         
         tvErrorTitle.text = title
         tvErrorDescription.text = description
+        
+        etManualProductName.setText(defaultName ?: "")
+        btnSubmitManual.text = "Simpan & Lihat Panduan"
 
         btnSubmitManual.setOnClickListener {
             // Spinner position mapping: 0 -> Plastik (1), 1 -> Kertas (2), 2 -> Kaca (3), 3 -> Organik (4), 4 -> B3 (5), 5 -> Logam (6)
@@ -358,19 +449,40 @@ class ScanResultBottomSheet : BottomSheetDialogFragment() {
                 else -> 1
             }
             
-            // Open DetailActivity directly for manual selection
-            val appContext = context?.applicationContext ?: return@setOnClickListener
-            dismiss()
-            viewLifecycleOwner.lifecycleScope.launch {
+            val inputName = etManualProductName.text.toString().trim()
+            val finalName = if (inputName.isEmpty()) (defaultName ?: "Produk Manual") else inputName
+            
+            val hostActivity = activity ?: return@setOnClickListener
+            val appContext = hostActivity.applicationContext
+            
+            // Simpan ke Local DB (Cache)
+            CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob()).launch {
                 val db = EcoPediaDatabase.getInstance(appContext)
-                val category = db.wasteDao().getCategoryById(manualCategoryId)
+                db.wasteDao().insertLocalProduct(LocalProductEntity(
+                    barcode = barcode,
+                    productName = finalName,
+                    categoryId = manualCategoryId,
+                    ecoScore = null,
+                    imageUrl = null
+                ))
+            }
+            
+            // Simpan ke Riwayat
+            saveScanHistory(finalName, "UNKNOWN", null, manualCategoryId)
+            
+            // Open DetailActivity directly for manual selection
+            dismiss()
+            kotlinx.coroutines.CoroutineScope(Dispatchers.Main).launch {
+                val db = EcoPediaDatabase.getInstance(hostActivity.applicationContext)
+                val category = withContext(Dispatchers.IO) {
+                    db.wasteDao().getCategoryById(manualCategoryId)
+                }
                 if (category != null) {
-                    val intent = Intent(appContext, DetailActivity::class.java).apply {
+                    val intent = Intent(hostActivity, DetailActivity::class.java).apply {
                         putExtra("CATEGORY_ID", category.id)
                         putExtra("CATEGORY", category.name)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     }
-                    appContext.startActivity(intent)
+                    hostActivity.startActivity(intent)
                 }
             }
         }

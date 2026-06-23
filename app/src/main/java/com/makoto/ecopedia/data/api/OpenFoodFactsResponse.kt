@@ -12,11 +12,7 @@ data class OpenFoodFactsResponse(
 data class ProductData(
     @SerializedName("product_name") val productName: String?,
     @SerializedName("image_url") val imageUrl: String?,
-    @SerializedName("packaging") val packaging: PackagingData?,
+    @SerializedName("packaging") val packaging: String?,
     @SerializedName("packaging_materials_tags") val packagingMaterialsTags: List<String>?,
     @SerializedName("ecoscore_grade") val ecoscoreGrade: String?
-)
-
-data class PackagingData(
-    @SerializedName("text") val text: String?
 )

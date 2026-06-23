@@ -3,7 +3,7 @@ package com.makoto.ecopedia.data
 object DatabaseSeeder {
 
     suspend fun seedDatabase(dao: WasteDao) {
-        if (dao.getCategoryCount() > 0) return
+        if (dao.getCategoryCount() > 0 && dao.getLocalProductCount() > 0) return
 
         val categories = listOf(
             WasteCategoryEntity(
@@ -104,8 +104,27 @@ object DatabaseSeeder {
             WasteExampleEntity(28, 6, "Tutup Kaleng", "Tutup kaleng makanan dari baja atau aluminium", "80-200 tahun"),
             WasteExampleEntity(29, 6, "Kaleng Makanan", "Kaleng sarden, kornet, susu dari tin plate (baja berlapis timah)", "50-100 tahun")
         )
+        val localProducts = listOf(
+            LocalProductEntity("4987176018083", "vicks inhaller", 1, null, null),
+            LocalProductEntity("8992772195089", "Kispray Violet", 1, null, null),
+            LocalProductEntity("8996001302248", "Biskuit Sari Gandum", 1, null, null),
+            LocalProductEntity("8991368755522", "Oasis+ Air Mineral pH9", 1, null, null),
+            LocalProductEntity("8996001600207", "Pucuk harum 500ml", 1, "A", "https://images.openfoodfacts.org/images/products/899/600/160/0207/front_en.4.400.jpg"),
+            LocalProductEntity("8992946122002", "Tropical Minyak Goreng 2L", 1, null, null),
+            LocalProductEntity("8993496001076", "Sania", 1, "D", "https://images.openfoodfacts.org/images/products/899/349/600/1076/front_en.8.400.jpg"),
+            LocalProductEntity("8886007811076", "Teh Celup Sosro 30s", 2, null, null),
+            LocalProductEntity("8999510961036", "Groovy Root Brew 330ml", 6, null, null),
+            LocalProductEntity("8993190912210", "Amidis Air Demineral 600ml", 1, null, null),
+            LocalProductEntity("8993365135031", "Madu tj 500g", 1, null, null),
+            LocalProductEntity("8993007002967", "Tiga Sapi Kental Manis 490g", 6, null, null),
+            LocalProductEntity("036000291452", "penaut butter creamy", 1, "D", "https://images.openfoodfacts.org/images/products/003/600/029/1452/front_en.48.400.jpg"),
+            LocalProductEntity("8997035563414", "POCARI SWEAT 500 ml", 1, null, null),
+            LocalProductEntity("8886008101053", "Aqua Botol 600 ml", 1, "NOT-APPLICABLE", "https://images.openfoodfacts.org/images/products/888/600/810/1053/front_en.25.400.jpg"),
+            LocalProductEntity("8996001600269", "Mountain Mineral Water", 1, "NOT-APPLICABLE", "https://images.openfoodfacts.org/images/products/899/600/160/0269/front_en.8.400.jpg"),
+            LocalProductEntity("8998009010613", "Ultra Milk Full Cream", 2, "D", "https://images.openfoodfacts.org/images/products/899/800/901/0613/front_en.30.400.jpg"),
+            LocalProductEntity("8997035563544", "POCARI SWEAT 350ml", 1, null, null)
+        )
 
-        dao.insertCategories(categories)
-        dao.insertExamples(examples)
+        dao.seedAll(categories, examples, localProducts)
     }
 }
