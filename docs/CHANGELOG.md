@@ -2,6 +2,23 @@
 
 ---
 
+## 11:28 | 24 Juni 2026 | Rabu | Perbaikan Tampilan Minor & Fitur Tips |
+
+### 1. Fix Keterbacaan Teks di Dark Mode
+**File:** `app/src/main/res/values-night/colors.xml` & `activity_detail.xml`
+- Mengembalikan warna `text_secondary` menjadi putih (`#FFFFFFFF`) di mode gelap.
+- Memastikan warna `tvHeroTitle` menggunakan `@color/white` dan deskripsi menggunakan `@color/on_surface` agar tidak tenggelam dengan background yang gelap.
+- **Alasan:** Memperbaiki kontras agar teks lebih mudah dibaca saat aplikasi digunakan di mode gelap.
+
+### 2. Implementasi Bottom Sheet Fitur Tips
+**File:** `TipDetailBottomSheet.kt`, `layout_tip_detail_bottom_sheet.xml`, `TipsFragment.kt`, `fragment_tips.xml`
+- Mengonversi data statis di tab Tips menjadi interaktif menggunakan `BottomSheetDialogFragment`.
+- Menambahkan layout bottom sheet baru (`layout_tip_detail_bottom_sheet.xml`) yang dilengkapi dengan `NestedScrollView` dan indikator *drag handle* untuk UX yang lebih baik.
+- Menambahkan *click listener* pada setiap kartu tips di `TipsFragment.kt` dengan ID yang sesuai dengan XML (`tipPotBotol`, `tipEcobrick`, `tipUmurSampah`) untuk memunculkan detail artikel saat diklik.
+- **Alasan:** Menghidupkan fitur Tips yang sebelumnya hanya berupa UI mati (tidak dapat di-klik), memberikan konten edukasi nyata kepada pengguna.
+
+---
+
 ## 22:30 | 23 Juni 2026 | Selasa | Fase 3: Offline-First and Manual Input |
 
 ### 1. Local-First Caching Database

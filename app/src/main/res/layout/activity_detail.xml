@@ -95,7 +95,7 @@
                         android:layout_gravity="center"
                         android:fontFamily="sans-serif-black"
                         android:text="Sampah Plastik"
-                        android:textColor="@color/bone_white"
+                        android:textColor="@color/white"
                         android:textSize="28sp"
                         android:gravity="center"
                         android:padding="20dp" />
@@ -120,7 +120,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="6dp"
                 android:text="Deskripsi sampah akan muncul di sini."
-                android:textColor="#666666"
+                android:textColor="@color/on_surface"
                 android:textSize="15sp" />
 
             <!-- Divider -->
@@ -147,7 +147,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="6dp"
                 android:text="Ciri-ciri akan muncul di sini."
-                android:textColor="#666666"
+                android:textColor="@color/on_surface"
                 android:textSize="15sp" />
 
             <!-- Divider -->
@@ -174,7 +174,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="6dp"
                 android:text="Dampak lingkungan akan muncul di sini."
-                android:textColor="#666666"
+                android:textColor="@color/on_surface"
                 android:textSize="15sp" />
 
             <!-- Divider -->
@@ -201,7 +201,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="6dp"
                 android:text="Tips daur ulang akan muncul di sini."
-                android:textColor="#666666"
+                android:textColor="@color/on_surface"
                 android:textSize="15sp" />
 
             <!-- Divider -->
@@ -228,7 +228,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="6dp"
                 android:text="Contoh sampah akan muncul di sini."
-                android:textColor="#666666"
+                android:textColor="@color/on_surface"
                 android:textSize="15sp" />
 
             <!-- Bottom spacing -->
